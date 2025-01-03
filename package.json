@@ -2,13 +2,13 @@
   "name": "spritelab",
   "version": "0.1.0",
   "description": "Build a custom icon library from the terminal",
-  "main": "build/index.js",
+  "main": "build/src/index.js",
   "source": "src/index.ts",
   "bin": {
-    "spritelab": "build/index.js"
+    "spritelab": "build/src/index.js"
   },
   "scripts": {
-    "start": "node ./build/index.js",
+    "start": "node ./build/src/index.js",
     "dev": "tsc -w",
     "build": "npm run pretty && npm run lint && tsc",
     "up": "npm version patch",
@@ -35,5 +35,10 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.0"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.0.0",
+    "inquirer": "^12.3.0"
   }
 }
