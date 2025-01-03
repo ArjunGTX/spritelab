@@ -1,99 +1,45 @@
 #!/usr/bin/env node
-import { setTimeout } from "node:timers/promises";
-import * as p from "@clack/prompts";
-import color from "picocolors";
+import { Command } from "commander";
+import pi from "picocolors";
+import { readFile } from "fs/promises";
+import { initAction } from "./actions/init.js";
+import { addIconAction } from "./actions/add-icon.js";
+import { removeIconAction } from "./actions/remove-icon.js";
+import { createSpriteAction } from "./actions/create-sprite.js";
+import { deleteSpriteAction } from "./actions/delete-sprite.js";
 
-async function main() {
-  console.clear();
+const main = async () => {
+  // Read package.json file and get the version, name and description
+  const pkgFile = await readFile(new URL("../package.json", import.meta.url));
+  const pkg = JSON.parse(pkgFile.toString());
 
-  await setTimeout(1000);
+  const program = new Command();
+  // Display the version, name and description of the package
+  program.version(pkg.version).name(pkg.name).description(pkg.description);
 
-  p.updateSettings({
-    aliases: {
-      w: "up",
-      s: "down",
-      a: "left",
-      d: "right",
-    },
-  });
+  program
+    .command("init")
+    .description("Initialize the icon library.")
+    .action(initAction);
+  program
+    .command("add <icon> [sprite]")
+    .description("Add an icon to a sprite.")
+    .addHelpText("after", "\nExample: spritelab add icon-name sprite-name")
+    .action(addIconAction);
+  program
+    .command("remove <icon> [sprite]")
+    .description("Remove an icon from a sprite.")
+    .action(removeIconAction);
+  program
+    .command("create <sprite>")
+    .description("Create a new sprite.")
+    .action(createSpriteAction);
+  program
+    .command("delete <sprite>")
+    .description("Delete a sprite and all the icons within the sprite.")
+    .action(deleteSpriteAction);
 
-  p.intro(`${color.bgCyan(color.black(" create-app "))}`);
+  program.parse(process.argv);
+};
 
-  const project = await p.group(
-    {
-      path: () =>
-        p.text({
-          message: "Where should we create your project?",
-          placeholder: "./sparkling-solid",
-          validate: (value) => {
-            if (!value) return "Please enter a path.";
-            if (value[0] !== ".") return "Please enter a relative path.";
-          },
-        }),
-      password: () =>
-        p.password({
-          message: "Provide a password",
-          validate: (value) => {
-            if (!value) return "Please enter a password.";
-            if (value.length < 5)
-              return "Password should have at least 5 characters.";
-          },
-        }),
-      type: ({ results }) =>
-        p.select({
-          message: `Pick a project type within "${results.path}"`,
-          initialValue: "ts",
-          maxItems: 5,
-          options: [
-            { value: "ts", label: "TypeScript" },
-            { value: "js", label: "JavaScript" },
-            { value: "rust", label: "Rust" },
-            { value: "go", label: "Go" },
-            { value: "python", label: "Python" },
-            { value: "coffee", label: "CoffeeScript", hint: "oh no" },
-          ],
-        }),
-      tools: () =>
-        p.multiselect({
-          message: "Select additional tools.",
-          initialValues: ["prettier", "eslint"],
-          options: [
-            { value: "prettier", label: "Prettier", hint: "recommended" },
-            { value: "eslint", label: "ESLint", hint: "recommended" },
-            { value: "stylelint", label: "Stylelint" },
-            { value: "gh-action", label: "GitHub Action" },
-          ],
-        }),
-      install: () =>
-        p.confirm({
-          message: "Install dependencies?",
-          initialValue: false,
-        }),
-    },
-    {
-      onCancel: () => {
-        p.cancel("Operation cancelled.");
-        process.exit(0);
-      },
-    },
-  );
-
-  if (project.install) {
-    const s = p.spinner();
-    s.start("Installing via pnpm");
-    await setTimeout(2500);
-    s.stop("Installed via pnpm");
-  }
-  console.log(project);
-  
-  const nextSteps = `cd ${project.path}        \n${project.install ? "" : "pnpm install\n"}pnpm dev`;
-
-  p.note(nextSteps, "Next steps.");
-
-  p.outro(
-    `Problems? ${color.underline(color.cyan("https://example.com/issues"))}`,
-  );
-
-}
-
-main().catch(console.error);
+main().catch((err) => pi.red(`Failed to execute spritelab cli: ${err}`));
