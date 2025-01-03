@@ -1,6 +1,6 @@
 {
   "name": "spritelab",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Build a custom icon library from the terminal",
   "main": "build/index.js",
   "source": "src/index.ts",
