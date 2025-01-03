@@ -8,10 +8,14 @@
     "spritelab": "build/index.js"
   },
   "scripts": {
-    "test": "node ./build/index.js",
+    "start": "node ./build/index.js",
     "dev": "tsc -w",
-    "build": "tsc",
-    "publish": "npm run up && npm publish"
+    "build": "npm run pretty && npm run lint && tsc",
+    "up": "npm version patch",
+    "publish": "npm run build && npm run up && npm publish",
+    "pretty": "prettier --write \"./**/*.{json,ts,js,yml}\"",
+    "pretty:check": "prettier \"./**/*.{json,ts,js,yml}\" --check",
+    "lint": "eslint \"./**/*.{json,ts,js}\" --max-warnings 0"
   },
   "repository": {
     "type": "git",
@@ -24,7 +28,12 @@
   },
   "homepage": "https://github.com/ArjunGTX/spritelab#readme",
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.5",
-    "typescript": "^5.7.2"
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0"
   }
 }
