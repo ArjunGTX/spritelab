@@ -1,1 +1,1 @@
-export const addIconAction = () => {};
+export const addIconAction = async () => {};
