@@ -1,6 +1,6 @@
 {
   "name": "spritelab",
-  "version": "0.1.4",
+  "version": "0.1.0",
   "description": "Build a custom icon library from the terminal",
   "main": "build/index.js",
   "source": "src/index.ts",
@@ -12,7 +12,6 @@
     "dev": "tsc -w",
     "build": "npm run pretty && npm run lint && tsc",
     "up": "npm version patch",
-    "publish": "npm run build && npm run up && npm publish",
     "pretty": "prettier --write \"./**/*.{json,ts,js,yml}\"",
     "pretty:check": "prettier \"./**/*.{json,ts,js,yml}\" --check",
     "lint": "eslint \"./**/*.{json,ts,js}\" --max-warnings 0"
