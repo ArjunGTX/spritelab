@@ -1,0 +1,30 @@
+{
+  "name": "spritelab",
+  "version": "0.1.0",
+  "description": "Build a custom icon library from the terminal",
+  "main": "build/index.js",
+  "source": "src/index.ts",
+  "bin": {
+    "spritelab": "build/index.js"
+  },
+  "scripts": {
+    "test": "node ./build/index.js",
+    "dev": "tsc -w",
+    "build": "tsc",
+    "publish": "npm run up && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArjunGTX/spritelab.git"
+  },
+  "author": "Arjun VC",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ArjunGTX/spritelab/issues"
+  },
+  "homepage": "https://github.com/ArjunGTX/spritelab#readme",
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  }
+}
