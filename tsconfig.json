@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
+    "module": "Node16",
     "esModuleInterop": true,
     "outDir": "./build",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "node16",
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
