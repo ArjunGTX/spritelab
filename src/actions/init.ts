@@ -20,7 +20,7 @@ export class InitAction {
   private promptResponse: PromptResponse | null = null;
 
   // Check if the project uses TypeScript by looking for a tsconfig.json file at the root.
-  private async hasTypeScript() {
+  private async hasTypeScript(): Promise<boolean> {
     try {
       const tsconfigPath = join(process.cwd(), "tsconfig.json");
       await fs.access(tsconfigPath);
@@ -31,7 +31,7 @@ export class InitAction {
   }
 
   // Check if the project uses React or Next.js by looking for the respective dependencies in package.json.
-  private async getFramework() {
+  private async getFramework(): Promise<Framework> {
     try {
       const pkgPath = join(process.cwd(), "package.json");
       const pkgFile = await readFile(pkgPath);
@@ -44,58 +44,50 @@ export class InitAction {
       }
       return "other";
     } catch (err) {
-      const error = err as Error;
-      console.log(`Failed to read package.json: ${error.message}`);
+      console.error(`Failed to read package.json: ${(err as Error).message}`);
       process.exit(1);
     }
   }
 
-  private getDefaultSpritePath() {
-    if (this.framework === "next" || this.framework === "react") {
-      return "./public/sprites";
-    }
-    return "./sprites";
+  private getDefaultSpritePath(): string {
+    return this.framework === "next" || this.framework === "react"
+      ? "./public/sprites"
+      : "./sprites";
   }
 
-  private async getDefaultComponentPath() {
+  private async getDefaultComponentPath(): Promise<string> {
     const hasSrc = await fs
       .access(join(process.cwd(), "src"))
       .then(() => true)
       .catch(() => false);
-    if (hasSrc) {
-      return "./src/components/icon";
-    }
-    return "./components/icon";
+    return hasSrc ? "./src/components/icon" : "./components/icon";
   }
 
-  private getDefaultComponentName() {
+  private getDefaultComponentName(): string {
     return "Icon";
   }
 
-  private validateSpritePath(input: string) {
-    if (!input.startsWith("./public")) {
-      return "The path should be within the public directory.";
-    }
-    return true;
+  private validateSpritePath(input: string): boolean | string {
+    return input.startsWith("./public")
+      ? true
+      : "The path should be within the public directory.";
   }
 
-  private validateComponentPath(input: string) {
-    if (!input.startsWith("./")) {
-      return "The path should be relative to the project root.";
-    }
-    return true;
+  private validateComponentPath(input: string): boolean | string {
+    return input.startsWith("./")
+      ? true
+      : "The path should be relative to the project root.";
   }
 
-  private validateComponentName(input: string) {
-    if (!/^[A-Z][A-Za-z0-9]*$/.test(input)) {
-      return "The component name should start with an uppercase letter and contain only alphanumeric characters.";
-    }
-    return true;
+  private validateComponentName(input: string): boolean | string {
+    return /^[A-Z][A-Za-z0-9]*$/.test(input)
+      ? true
+      : "The component name should start with an uppercase letter and contain only alphanumeric characters.";
   }
 
-  private async generatePrompts() {
+  private async generatePrompts(): Promise<PromptResponse> {
     try {
-      const response = await inquirer.prompt([
+      return await inquirer.prompt([
         {
           type: "input",
           name: "spritePath",
@@ -123,7 +115,6 @@ export class InitAction {
           message: "Proceed to initialize the icon library?",
         },
       ]);
-      return response;
     } catch {
       console.log("Operation interrupted.");
       process.exit(0);
@@ -141,7 +132,7 @@ export class InitAction {
   }
 
   // Check if the sprite and component files already exist at the specified locations and prompt the user to overwrite them.
-  private async checkExistence() {
+  private async checkExistence(): Promise<void> {
     try {
       this.assertPromptResponseExists(this.promptResponse);
       const spritePath = join(
@@ -191,13 +182,14 @@ export class InitAction {
         }
       }
     } catch (err) {
-      const error = err as Error;
-      console.log(`Failed to validate icon library: ${error.message}`);
+      console.error(
+        `Failed to validate icon library: ${(err as Error).message}`,
+      );
       process.exit(1);
     }
   }
 
-  private async createSprite() {
+  private async createSprite(): Promise<void> {
     try {
       this.assertPromptResponseExists(this.promptResponse);
       console.log(`Creating sprite at ${this.promptResponse.spritePath}`);
@@ -210,15 +202,14 @@ export class InitAction {
       await fs.writeFile(spritePath, defaultSpriteContent);
       console.log("Sprite created successfully.");
     } catch (err) {
-      const error = err as Error;
-      console.log(
-        `Failed to create sprite file at path ${this.promptResponse?.spritePath}: ${error.message}`,
+      console.error(
+        `Failed to create sprite file at path ${this.promptResponse?.spritePath}: ${(err as Error).message}`,
       );
       process.exit(1);
     }
   }
 
-  private async createComponent() {
+  private async createComponent(): Promise<void> {
     try {
       this.assertPromptResponseExists(this.promptResponse);
       console.log(
@@ -236,15 +227,14 @@ export class InitAction {
       await fs.writeFile(componentPath, this.generateComponentContent());
       console.log("Component created successfully.");
     } catch (err) {
-      const error = err as Error;
-      console.log(
-        `Failed to create component file at path ${this.promptResponse?.componentPath}: ${error.message}`,
+      console.error(
+        `Failed to create component file at path ${this.promptResponse?.componentPath}: ${(err as Error).message}`,
       );
       process.exit(1);
     }
   }
 
-  private generateComponentContent() {
+  private generateComponentContent(): string {
     this.assertPromptResponseExists(this.promptResponse);
     const { componentName, spritePath } = this.promptResponse;
     const spriteLocation = spritePath.slice("./public".length) || "/";
@@ -290,7 +280,7 @@ export class InitAction {
     ].join("\n");
   }
 
-  async execute(options: Record<string, unknown>) {
+  async execute(options: Record<string, unknown>): Promise<void> {
     this.hasTs = await this.hasTypeScript();
     this.framework = await this.getFramework();
     if (this.framework === "other") {
