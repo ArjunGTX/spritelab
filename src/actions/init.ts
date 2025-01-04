@@ -87,8 +87,8 @@ export class InitAction {
   }
 
   private validateComponentName(input: string) {
-    if (!/^[$A-Z_][0-9A-Z_$]*$/i.test(input)) {
-      return "The component name should be a valid JavaScript identifier.";
+    if (!/^[A-Z][A-Za-z0-9]*$/.test(input)) {
+      return "The component name should start with an uppercase letter and contain only alphanumeric characters.";
     }
     return true;
   }
@@ -255,8 +255,8 @@ export class InitAction {
         `export type IconName = "";`,
         "",
         `export type ${componentName}Props = React.DetailedHTMLProps<`,
-        "React.SVGAttributes<SVGSVGElement>,",
-        "SVGSVGElement",
+        "  React.SVGAttributes<SVGSVGElement>,",
+        "  SVGSVGElement",
         "> & {",
         "  icon: IconName;",
         "};",
