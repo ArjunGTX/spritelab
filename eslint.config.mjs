@@ -11,4 +11,14 @@ export default [
   {
     ignores: ["node_modules/", "build/"],
   },
+  {
+    rules: {
+      "linebreak-style": ["error", "unix"],
+      curly: "error",
+      "require-await": "error",
+      "no-unreachable": "error",
+      "prefer-const": "error",
+      "prefer-template": "error",
+    },
+  },
 ];

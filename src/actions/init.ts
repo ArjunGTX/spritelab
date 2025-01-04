@@ -124,7 +124,7 @@ export class InitAction {
         },
       ]);
       return response;
-    } catch (err) {
+    } catch {
       console.log("Operation interrupted.");
       process.exit(0);
     }
@@ -250,9 +250,9 @@ export class InitAction {
     const spriteLocation = spritePath.slice("./public".length) || "/";
     if (this.hasTs) {
       return [
-        `import React from "react";`,
+        'import React from "react";',
         "",
-        `export type IconName = "";`,
+        'export type IconName = "";',
         "",
         `export type ${componentName}Props = React.DetailedHTMLProps<`,
         "  React.SVGAttributes<SVGSVGElement>,",
@@ -265,7 +265,7 @@ export class InitAction {
         "  { icon, ...props },",
         "  ref",
         ") {",
-        `  const [sprite, iconName] = icon.split("/");`,
+        '  const [sprite, iconName] = icon.split("/");',
         "  return (",
         "    <svg ref={ref} {...props}>",
         `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
@@ -276,10 +276,10 @@ export class InitAction {
       ].join("\n");
     }
     return [
-      `import React from "react";`,
+      'import React from "react";',
       "",
       `export const ${componentName} = React.forwardRef(function ${componentName}({ icon, ...props }, ref) {`,
-      `  const [sprite, iconName] = icon.split("/");`,
+      '  const [sprite, iconName] = icon.split("/");',
       "  return (",
       "    <svg ref={ref} {...props}>",
       `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
