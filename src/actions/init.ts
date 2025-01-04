@@ -4,18 +4,21 @@ import inquirer from "inquirer";
 import { join } from "path";
 import { Constants } from "../utils/constants.js";
 
-export type Framework = "react" | "next" | "other";
+type Framework = "react" | "next" | "other";
+
+type PromptResponse = {
+  spriteLocation: string;
+  componentLocation: string;
+  componentName: string;
+  confirm: boolean;
+};
 
 export class InitAction {
   private hasTs: boolean = false;
   private framework: Framework = "other";
-  private promptResponse: {
-    spriteLocation: string;
-    componentLocation: string;
-    componentName: string;
-    confirm: boolean;
-  } | null = null;
+  private promptResponse: PromptResponse | null = null;
 
+  // Check if the project uses TypeScript by looking for a tsconfig.json file at the root.
   private async hasTypeScript() {
     try {
       const tsconfigPath = join(process.cwd(), "tsconfig.json");
@@ -26,6 +29,7 @@ export class InitAction {
     }
   }
 
+  // Check if the project uses React or Next.js by looking for the respective dependencies in package.json.
   private async getFramework() {
     try {
       const pkgPath = join(process.cwd(), "package.json");
@@ -117,6 +121,8 @@ export class InitAction {
       process.exit(0);
     }
   }
+
+  // Assert that the prompt response is not null.
   private assertPromptResponseExists(
     promptResponse: typeof this.promptResponse,
   ): asserts promptResponse is NonNullable<typeof this.promptResponse> {
@@ -126,6 +132,7 @@ export class InitAction {
     }
   }
 
+  // Check if the sprite and component files already exist at the specified locations and prompt the user to overwrite them.
   private async checkExistence() {
     try {
       this.assertPromptResponseExists(this.promptResponse);
@@ -235,7 +242,7 @@ export class InitAction {
     }
   }
 
-  async execute() {
+  async execute(options: Record<string, unknown>) {
     this.hasTs = await this.hasTypeScript();
     this.framework = await this.getFramework();
     if (this.framework === "other") {
@@ -244,19 +251,30 @@ export class InitAction {
       );
       process.exit(0);
     }
-    this.promptResponse = await this.generatePrompts();
-    if (!this.promptResponse.confirm) {
-      console.log("Initialization cancelled.");
-      process.exit(0);
+    if (options.yes) {
+      this.promptResponse = {
+        spriteLocation: this.getDefaultSpriteLocation(),
+        componentLocation: await this.getDefaultComponentLocation(),
+        componentName: this.getDefaultComponentName(),
+        confirm: true,
+      };
+    } else {
+      this.promptResponse = await this.generatePrompts();
+      if (!this.promptResponse.confirm) {
+        console.log("Initialization cancelled.");
+        process.exit(0);
+      }
     }
     await this.checkExistence();
     await this.createSprite();
     await this.createComponent();
     console.log(
-      "Icon library initialized successfully.\n\nNext Steps:\n\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.",
+      "Icon library initialized successfully.\n\nNext Steps:\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.\n",
     );
   }
+
   constructor() {
+    // explicitly bind the execute method to the class instance to avoid losing the context when passing it as a callback.
     this.execute = this.execute.bind(this);
   }
 }
