@@ -2,11 +2,12 @@
 import { Command } from "commander";
 import pi from "picocolors";
 import { readFile } from "fs/promises";
-import { initAction } from "./actions/init.js";
 import { addIconAction } from "./actions/add-icon.js";
 import { removeIconAction } from "./actions/remove-icon.js";
 import { createSpriteAction } from "./actions/create-sprite.js";
 import { deleteSpriteAction } from "./actions/delete-sprite.js";
+import { Constants } from "./utils/constants.js";
+import { InitAction } from "./actions/init.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -24,7 +25,7 @@ const main = async () => {
       "after",
       "\n\nInitialize the icon library by answering a few questions. This will create a sprite file, a react component, and a type definition file based on whether your project uses typescript or not.\n\nExample: npx spritelab init\n\n",
     )
-    .action(initAction);
+    .action(new InitAction().execute);
   program
     .command("add")
     .alias("a")
@@ -36,7 +37,7 @@ const main = async () => {
     .option(
       "-s, --sprite [sprite]",
       "Name of the sprite to add the icon to. If not provided, the icon will be added to the default sprite.",
-      "default",
+      Constants.defaultSpriteName,
     )
     .description("Add an icon to a sprite.")
     .addHelpText(
@@ -51,7 +52,7 @@ const main = async () => {
     .option(
       "-s, --sprite [sprite]",
       "Name of the sprite to remove the icon from. If not provided, the icon will be removed from the default sprite if it exists.",
-      "default",
+      Constants.defaultSpriteName,
     )
     .description("Remove an icon from a sprite.")
     .addHelpText(
@@ -75,7 +76,7 @@ const main = async () => {
     .option(
       "-n, --name [name]",
       "Name of the sprite to be deleted. If not provided, the default sprite will be deleted.",
-      "default",
+      Constants.defaultSpriteName,
     )
     .description("Delete a sprite and all the icons within the sprite.")
     .addHelpText(

@@ -2,119 +2,226 @@ import { promises as fs } from "fs";
 import { readFile } from "fs/promises";
 import inquirer from "inquirer";
 import { join } from "path";
+import { Constants } from "../utils/constants.js";
 
 export type Framework = "react" | "next" | "other";
 
-export const initAction = async () => {
-  const hasTS = await hasTypeScript();
-  const framework = await getFramework();
-  if (framework === "other") {
-    console.log(
-      "SpriteLab currently only supports React and Next.js projects. New frameworks will be added soon.",
-    );
-    process.exit(0);
-  }
-  const promptResponse = await generatePrompts(hasTS, framework);
-  if (!promptResponse.confirm) {
-    console.log("Initialization cancelled.");
-    process.exit(0);
-  }
-};
+export class InitAction {
+  private hasTs: boolean = false;
+  private framework: Framework = "other";
+  private promptResponse: {
+    spriteLocation: string;
+    componentLocation: string;
+    componentName: string;
+    confirm: boolean;
+  } | null = null;
 
-// Check if the project has TypeScript by looking for tsconfig.json
-const hasTypeScript = async () => {
-  const tsconfigPath = join(process.cwd(), "tsconfig.json");
-  try {
-    await fs.access(tsconfigPath);
+  private async hasTypeScript() {
+    try {
+      const tsconfigPath = join(process.cwd(), "tsconfig.json");
+      await fs.access(tsconfigPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async getFramework() {
+    try {
+      const pkgPath = join(process.cwd(), "package.json");
+      const pkgFile = await readFile(pkgPath);
+      const pkg = JSON.parse(pkgFile.toString());
+      if (pkg.dependencies.next) {
+        return "next";
+      }
+      if (pkg.dependencies.react) {
+        return "react";
+      }
+      return "other";
+    } catch (err) {
+      const error = err as Error;
+      console.log(`Failed to read package.json: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  private getDefaultSpriteLocation() {
+    if (this.framework === "next" || this.framework === "react") {
+      return "./public/sprites";
+    }
+    return "./sprites";
+  }
+
+  private async getDefaultComponentLocation() {
+    const hasSrc = await fs
+      .access(join(process.cwd(), "src"))
+      .then(() => true)
+      .catch(() => false);
+    if (hasSrc) {
+      return "./src/components/icon";
+    }
+    return "./components/icon";
+  }
+
+  private getDefaultComponentName() {
+    return "Icon";
+  }
+
+  private validateDirectoryPath(input: string) {
+    if (!input.startsWith("./")) {
+      return "The path should be relative to the project root.";
+    }
     return true;
-  } catch {
-    return false;
   }
-};
 
-// Retrieve the frontend framework used in the project
-const getFramework = async () => {
-  const pkgPath = join(process.cwd(), "package.json");
-  const pkgFile = await readFile(pkgPath);
-  const pkg = JSON.parse(pkgFile.toString());
-  if (pkg.dependencies.next) {
-    return "next";
+  private validateComponentName(input: string) {
+    if (!/^[$A-Z_][0-9A-Z_$]*$/i.test(input)) {
+      return "The component name should be a valid JavaScript identifier.";
+    }
+    return true;
   }
-  if (pkg.dependencies.react) {
-    return "react";
-  }
-  return "other";
-};
 
-const getDefaultSpriteLocation = (framework: Framework) => {
-  if (framework === "next" || framework === "react") {
-    return "./public/sprites";
+  private async generatePrompts() {
+    try {
+      const response = await inquirer.prompt([
+        {
+          type: "input",
+          name: "spriteLocation",
+          message: "Where would you like to save the sprites?",
+          default: this.getDefaultSpriteLocation(),
+          validate: this.validateDirectoryPath,
+        },
+        {
+          type: "input",
+          name: "componentLocation",
+          message: "Where would you like to save the component?",
+          default: await this.getDefaultComponentLocation(),
+          validate: this.validateDirectoryPath,
+        },
+        {
+          type: "input",
+          name: "componentName",
+          message: "What would you like to name the component?",
+          default: this.getDefaultComponentName(),
+          validate: this.validateComponentName,
+        },
+        {
+          type: "confirm",
+          name: "confirm",
+          message: "Proceed to initialize the icon library?",
+        },
+      ]);
+      return response;
+    } catch (err) {
+      console.log("Operation interrupted.");
+      process.exit(0);
+    }
   }
-  return "./sprites";
-};
 
-const getDefaultComponentLocation = async () => {
-  const hasSrc = await fs
-    .access(join(process.cwd(), "src"))
-    .then(() => true)
-    .catch(() => false);
-  if (hasSrc) {
-    return "./src/components/icon";
+  private async createSprite() {
+    try {
+      if (!this.promptResponse) {
+        console.log("Cannot create sprite without prompt response.");
+        return;
+      }
+      console.log(`Creating sprite at ${this.promptResponse.spriteLocation}`);
+      const spriteFolder = join(
+        process.cwd(),
+        this.promptResponse.spriteLocation,
+      );
+      const spritePath = join(
+        spriteFolder,
+        `${Constants.defaultSpriteName}.svg`,
+      );
+      const spriteExists = await fs
+        .access(spritePath)
+        .then(() => true)
+        .catch(() => false);
+      if (spriteExists) {
+        console.log(
+          `Looks like you have already created the sprite at ${this.promptResponse.spriteLocation}.\n\nTo add new icons to your sprite, use the 'add' command.`,
+        );
+        process.exit(0);
+      }
+      await fs.mkdir(spriteFolder, { recursive: true });
+      await fs.writeFile(
+        join(
+          process.cwd(),
+          this.promptResponse.spriteLocation,
+          `${Constants.defaultSpriteName}.svg`,
+        ),
+        "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
+      );
+      console.log("Sprite created successfully.");
+    } catch (err) {
+      const error = err as Error;
+      console.log(
+        `Failed to create sprite file at path ${this.promptResponse?.spriteLocation}: ${error.message}`,
+      );
+      process.exit(1);
+    }
   }
-  return "./components/icon";
-};
 
-const getDefaultComponentName = () => {
-  return "Icon";
-};
-
-const validateDirectoryPath = (input: string) => {
-  if (!input.startsWith("./")) {
-    return "The path should be relative to the project root.";
+  private async createComponent() {
+    try {
+      if (!this.promptResponse) {
+        console.log("Cannot create component without prompt response.");
+        return;
+      }
+      console.log(
+        `Creating component at ${this.promptResponse.componentLocation}...`,
+      );
+      const componentFolder = join(
+        process.cwd(),
+        this.promptResponse.componentLocation,
+      );
+      const componentPath = join(
+        componentFolder,
+        `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
+      );
+      const componentExists = await fs
+        .access(componentPath)
+        .then(() => true)
+        .catch(() => false);
+      if (componentExists) {
+        console.log(
+          `Looks like you have already created the component at ${this.promptResponse.componentLocation}.\n\nTo add new icons to your sprite, use the 'add' command.`,
+        );
+        process.exit(0);
+      }
+      await fs.mkdir(componentFolder, { recursive: true });
+      await fs.writeFile(componentPath, `import React from "react"`);
+      console.log("Component created successfully.");
+    } catch (err) {
+      const error = err as Error;
+      console.log(
+        `Failed to create component file at path ${this.promptResponse?.componentLocation}: ${error.message}`,
+      );
+      process.exit(1);
+    }
   }
-  return true;
-};
 
-const validateComponentName = (input: string) => {
-  if (!/^[$A-Z_][0-9A-Z_$]*$/i.test(input)) {
-    return "The component name should be a valid JavaScript identifier.";
+  async execute() {
+    this.hasTs = await this.hasTypeScript();
+    this.framework = await this.getFramework();
+    if (this.framework === "other") {
+      console.log(
+        "SpriteLab currently only supports React and Next.js projects. New frameworks will be added soon.",
+      );
+      process.exit(0);
+    }
+    this.promptResponse = await this.generatePrompts();
+    if (!this.promptResponse.confirm) {
+      console.log("Initialization cancelled.");
+      process.exit(0);
+    }
+    await this.createSprite();
+    await this.createComponent();
+    console.log(
+      "Icon library initialized successfully.\n\nNext Steps:\n\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.",
+    );
   }
-  return true;
-};
-
-const generatePrompts = async (hasTS: boolean, framework: Framework) => {
-  try {
-    const response = await inquirer.prompt([
-      {
-        type: "input",
-        name: "spriteLocation",
-        message: "Where would you like to save the sprites?",
-        default: getDefaultSpriteLocation(framework),
-        validate: validateDirectoryPath,
-      },
-      {
-        type: "input",
-        name: "componentLocation",
-        message: "Where would you like to save the component?",
-        default: await getDefaultComponentLocation(),
-        validate: validateDirectoryPath,
-      },
-      {
-        type: "input",
-        name: "componentName",
-        message: "What would you like to name the component?",
-        default: getDefaultComponentName(),
-        validate: validateComponentName,
-      },
-      {
-        type: "confirm",
-        name: "confirm",
-        message: "Proceed to initialize the icon library?",
-      },
-    ]);
-    return response;
-  } catch (err) {
-    console.log("Operation interrupted.");
-    process.exit(0);
+  constructor() {
+    this.execute = this.execute.bind(this);
   }
-};
+}
