@@ -2,13 +2,14 @@ import { promises as fs } from "fs";
 import { readFile } from "fs/promises";
 import inquirer from "inquirer";
 import { join } from "path";
-import { Constants } from "../utils/constants.js";
+import { Constants, defaultSpriteContent } from "../utils/constants.js";
+import shortUUID from "short-uuid";
 
 type Framework = "react" | "next" | "other";
 
 type PromptResponse = {
-  spriteLocation: string;
-  componentLocation: string;
+  spritePath: string;
+  componentPath: string;
   componentName: string;
   confirm: boolean;
 };
@@ -49,14 +50,14 @@ export class InitAction {
     }
   }
 
-  private getDefaultSpriteLocation() {
+  private getDefaultSpritePath() {
     if (this.framework === "next" || this.framework === "react") {
       return "./public/sprites";
     }
     return "./sprites";
   }
 
-  private async getDefaultComponentLocation() {
+  private async getDefaultComponentPath() {
     const hasSrc = await fs
       .access(join(process.cwd(), "src"))
       .then(() => true)
@@ -71,7 +72,14 @@ export class InitAction {
     return "Icon";
   }
 
-  private validateDirectoryPath(input: string) {
+  private validateSpritePath(input: string) {
+    if (!input.startsWith("./public")) {
+      return "The path should be within the public directory.";
+    }
+    return true;
+  }
+
+  private validateComponentPath(input: string) {
     if (!input.startsWith("./")) {
       return "The path should be relative to the project root.";
     }
@@ -90,17 +98,17 @@ export class InitAction {
       const response = await inquirer.prompt([
         {
           type: "input",
-          name: "spriteLocation",
+          name: "spritePath",
           message: "Where would you like to save the sprites?",
-          default: this.getDefaultSpriteLocation(),
-          validate: this.validateDirectoryPath,
+          default: this.getDefaultSpritePath(),
+          validate: this.validateSpritePath,
         },
         {
           type: "input",
-          name: "componentLocation",
+          name: "componentPath",
           message: "Where would you like to save the component?",
-          default: await this.getDefaultComponentLocation(),
-          validate: this.validateDirectoryPath,
+          default: await this.getDefaultComponentPath(),
+          validate: this.validateComponentPath,
         },
         {
           type: "input",
@@ -138,7 +146,7 @@ export class InitAction {
       this.assertPromptResponseExists(this.promptResponse);
       const spritePath = join(
         process.cwd(),
-        this.promptResponse.spriteLocation,
+        this.promptResponse.spritePath,
         `${Constants.defaultSpriteName}.svg`,
       );
       const spriteExists = await fs
@@ -161,7 +169,7 @@ export class InitAction {
       }
       const componentPath = join(
         process.cwd(),
-        this.promptResponse.componentLocation,
+        this.promptResponse.componentPath,
         `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
       );
       const componentExists = await fs
@@ -192,25 +200,19 @@ export class InitAction {
   private async createSprite() {
     try {
       this.assertPromptResponseExists(this.promptResponse);
-      console.log(`Creating sprite at ${this.promptResponse.spriteLocation}`);
-      const spriteFolder = join(
-        process.cwd(),
-        this.promptResponse.spriteLocation,
-      );
+      console.log(`Creating sprite at ${this.promptResponse.spritePath}`);
+      const spriteFolder = join(process.cwd(), this.promptResponse.spritePath);
       await fs.mkdir(spriteFolder, { recursive: true });
       const spritePath = join(
         spriteFolder,
         `${Constants.defaultSpriteName}.svg`,
       );
-      await fs.writeFile(
-        spritePath,
-        "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
-      );
+      await fs.writeFile(spritePath, defaultSpriteContent);
       console.log("Sprite created successfully.");
     } catch (err) {
       const error = err as Error;
       console.log(
-        `Failed to create sprite file at path ${this.promptResponse?.spriteLocation}: ${error.message}`,
+        `Failed to create sprite file at path ${this.promptResponse?.spritePath}: ${error.message}`,
       );
       process.exit(1);
     }
@@ -220,26 +222,72 @@ export class InitAction {
     try {
       this.assertPromptResponseExists(this.promptResponse);
       console.log(
-        `Creating component at ${this.promptResponse.componentLocation}...`,
+        `Creating component at ${this.promptResponse.componentPath}...`,
       );
       const componentFolder = join(
         process.cwd(),
-        this.promptResponse.componentLocation,
+        this.promptResponse.componentPath,
       );
       await fs.mkdir(componentFolder, { recursive: true });
       const componentPath = join(
         componentFolder,
         `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
       );
-      await fs.writeFile(componentPath, `import React from "react"`);
+      await fs.writeFile(componentPath, this.generateComponentContent());
       console.log("Component created successfully.");
     } catch (err) {
       const error = err as Error;
       console.log(
-        `Failed to create component file at path ${this.promptResponse?.componentLocation}: ${error.message}`,
+        `Failed to create component file at path ${this.promptResponse?.componentPath}: ${error.message}`,
       );
       process.exit(1);
     }
+  }
+
+  private generateComponentContent() {
+    this.assertPromptResponseExists(this.promptResponse);
+    const { componentName, spritePath } = this.promptResponse;
+    const spriteLocation = spritePath.slice("./public".length) || "/";
+    if (this.hasTs) {
+      return [
+        `import React from "react";`,
+        "",
+        `export type IconName = "";`,
+        "",
+        `export type ${componentName}Props = React.DetailedHTMLProps<`,
+        "React.SVGAttributes<SVGSVGElement>,",
+        "SVGSVGElement",
+        "> & {",
+        "  icon: IconName;",
+        "};",
+        "",
+        `export const ${componentName} = React.forwardRef<SVGSVGElement, ${componentName}Props>(function Icon(`,
+        "  { icon, ...props },",
+        "  ref",
+        ") {",
+        `  const [sprite, iconName] = icon.split("/");`,
+        "  return (",
+        "    <svg ref={ref} {...props}>",
+        `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
+        "    </svg>",
+        "  );",
+        "});",
+        "",
+      ].join("\n");
+    }
+    return [
+      `import React from "react";`,
+      "",
+      `export const ${componentName} = React.forwardRef(function ${componentName}({ icon, ...props }, ref) {`,
+      `  const [sprite, iconName] = icon.split("/");`,
+      "  return (",
+      "    <svg ref={ref} {...props}>",
+      `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
+      "    </svg>",
+      "  );",
+      "});",
+      "",
+    ].join("\n");
   }
 
   async execute(options: Record<string, unknown>) {
@@ -253,8 +301,8 @@ export class InitAction {
     }
     if (options.yes) {
       this.promptResponse = {
-        spriteLocation: this.getDefaultSpriteLocation(),
-        componentLocation: await this.getDefaultComponentLocation(),
+        spritePath: this.getDefaultSpritePath(),
+        componentPath: await this.getDefaultComponentPath(),
         componentName: this.getDefaultComponentName(),
         confirm: true,
       };
