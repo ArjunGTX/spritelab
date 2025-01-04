@@ -117,20 +117,21 @@ export class InitAction {
       process.exit(0);
     }
   }
+  private assertPromptResponseExists(
+    promptResponse: typeof this.promptResponse,
+  ): asserts promptResponse is NonNullable<typeof this.promptResponse> {
+    if (!promptResponse) {
+      console.log("Prompt response is required to proceed.");
+      process.exit(1);
+    }
+  }
 
-  private async createSprite() {
+  private async checkExistence() {
     try {
-      if (!this.promptResponse) {
-        console.log("Cannot create sprite without prompt response.");
-        return;
-      }
-      console.log(`Creating sprite at ${this.promptResponse.spriteLocation}`);
-      const spriteFolder = join(
+      this.assertPromptResponseExists(this.promptResponse);
+      const spritePath = join(
         process.cwd(),
         this.promptResponse.spriteLocation,
-      );
-      const spritePath = join(
-        spriteFolder,
         `${Constants.defaultSpriteName}.svg`,
       );
       const spriteExists = await fs
@@ -138,18 +139,64 @@ export class InitAction {
         .then(() => true)
         .catch(() => false);
       if (spriteExists) {
-        console.log(
-          `Looks like you have already created the sprite at ${this.promptResponse.spriteLocation}.\n\nTo add new icons to your sprite, use the 'add' command.`,
-        );
-        process.exit(0);
+        const response = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "overwrite",
+            message:
+              "A sprite already exists at the specified location. Overwrite?",
+          },
+        ]);
+        if (!response.overwrite) {
+          console.log("Operation cancelled.");
+          process.exit(0);
+        }
       }
+      const componentPath = join(
+        process.cwd(),
+        this.promptResponse.componentLocation,
+        `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
+      );
+      const componentExists = await fs
+        .access(componentPath)
+        .then(() => true)
+        .catch(() => false);
+      if (componentExists) {
+        const response = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "overwrite",
+            message:
+              "A component already exists at the specified location. Overwrite?",
+          },
+        ]);
+        if (!response.overwrite) {
+          console.log("Operation cancelled.");
+          process.exit(0);
+        }
+      }
+    } catch (err) {
+      const error = err as Error;
+      console.log(`Failed to validate icon library: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  private async createSprite() {
+    try {
+      this.assertPromptResponseExists(this.promptResponse);
+      console.log(`Creating sprite at ${this.promptResponse.spriteLocation}`);
+      const spriteFolder = join(
+        process.cwd(),
+        this.promptResponse.spriteLocation,
+      );
       await fs.mkdir(spriteFolder, { recursive: true });
+      const spritePath = join(
+        spriteFolder,
+        `${Constants.defaultSpriteName}.svg`,
+      );
       await fs.writeFile(
-        join(
-          process.cwd(),
-          this.promptResponse.spriteLocation,
-          `${Constants.defaultSpriteName}.svg`,
-        ),
+        spritePath,
         "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
       );
       console.log("Sprite created successfully.");
@@ -164,10 +211,7 @@ export class InitAction {
 
   private async createComponent() {
     try {
-      if (!this.promptResponse) {
-        console.log("Cannot create component without prompt response.");
-        return;
-      }
+      this.assertPromptResponseExists(this.promptResponse);
       console.log(
         `Creating component at ${this.promptResponse.componentLocation}...`,
       );
@@ -175,21 +219,11 @@ export class InitAction {
         process.cwd(),
         this.promptResponse.componentLocation,
       );
+      await fs.mkdir(componentFolder, { recursive: true });
       const componentPath = join(
         componentFolder,
         `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
       );
-      const componentExists = await fs
-        .access(componentPath)
-        .then(() => true)
-        .catch(() => false);
-      if (componentExists) {
-        console.log(
-          `Looks like you have already created the component at ${this.promptResponse.componentLocation}.\n\nTo add new icons to your sprite, use the 'add' command.`,
-        );
-        process.exit(0);
-      }
-      await fs.mkdir(componentFolder, { recursive: true });
       await fs.writeFile(componentPath, `import React from "react"`);
       console.log("Component created successfully.");
     } catch (err) {
@@ -215,6 +249,7 @@ export class InitAction {
       console.log("Initialization cancelled.");
       process.exit(0);
     }
+    await this.checkExistence();
     await this.createSprite();
     await this.createComponent();
     console.log(

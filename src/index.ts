@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import pi from "picocolors";
 import { readFile } from "fs/promises";
 import { addIconAction } from "./actions/add-icon.js";
 import { removeIconAction } from "./actions/remove-icon.js";
@@ -88,4 +87,4 @@ const main = async () => {
   program.parse(process.argv);
 };
 
-main().catch((err) => pi.red(`Failed to execute spritelab cli: ${err}`));
+main().catch((err) => `Failed to execute spritelab cli: ${err}`);
