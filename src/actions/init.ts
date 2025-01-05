@@ -4,6 +4,7 @@ import inquirer from "inquirer";
 import { join } from "path";
 import { Constants, defaultSpriteContent } from "../utils/constants.js";
 import shortUUID from "short-uuid";
+import { CLIError } from "../utils/error.js";
 
 type Framework = "react" | "next" | "other";
 
@@ -44,8 +45,9 @@ export class InitAction {
       }
       return "other";
     } catch (err) {
-      console.error(`Failed to read package.json: ${(err as Error).message}`);
-      process.exit(1);
+      throw new CLIError(
+        `Failed to read package.json: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -116,8 +118,7 @@ export class InitAction {
         },
       ]);
     } catch {
-      console.log("Operation interrupted.");
-      process.exit(0);
+      throw new CLIError("Operation interrupted.", true);
     }
   }
 
@@ -126,8 +127,7 @@ export class InitAction {
     promptResponse: typeof this.promptResponse,
   ): asserts promptResponse is NonNullable<typeof this.promptResponse> {
     if (!promptResponse) {
-      console.log("Prompt response is required to proceed.");
-      process.exit(1);
+      throw new CLIError("Prompt response is required to proceed.");
     }
   }
 
@@ -154,8 +154,7 @@ export class InitAction {
           },
         ]);
         if (!response.overwrite) {
-          console.log("Operation cancelled.");
-          process.exit(0);
+          throw new CLIError("Operation cancelled.", true);
         }
       }
       const componentPath = join(
@@ -177,15 +176,13 @@ export class InitAction {
           },
         ]);
         if (!response.overwrite) {
-          console.log("Operation cancelled.");
-          process.exit(0);
+          throw new CLIError("Operation cancelled.", true);
         }
       }
     } catch (err) {
-      console.error(
+      throw new CLIError(
         `Failed to validate icon library: ${(err as Error).message}`,
       );
-      process.exit(1);
     }
   }
 
@@ -202,10 +199,9 @@ export class InitAction {
       await fs.writeFile(spritePath, defaultSpriteContent);
       console.log("Sprite created successfully.");
     } catch (err) {
-      console.error(
+      throw new CLIError(
         `Failed to create sprite file at path ${this.promptResponse?.spritePath}: ${(err as Error).message}`,
       );
-      process.exit(1);
     }
   }
 
@@ -227,10 +223,9 @@ export class InitAction {
       await fs.writeFile(componentPath, this.generateComponentContent());
       console.log("Component created successfully.");
     } catch (err) {
-      console.error(
+      throw new CLIError(
         `Failed to create component file at path ${this.promptResponse?.componentPath}: ${(err as Error).message}`,
       );
-      process.exit(1);
     }
   }
 
@@ -281,34 +276,46 @@ export class InitAction {
   }
 
   async execute(options: Record<string, unknown>): Promise<void> {
-    this.hasTs = await this.hasTypeScript();
-    this.framework = await this.getFramework();
-    if (this.framework === "other") {
+    try {
+      this.hasTs = await this.hasTypeScript();
+      this.framework = await this.getFramework();
+      if (this.framework === "other") {
+        throw new CLIError(
+          "SpriteLab currently only supports React and Next.js projects. New frameworks will be added soon.",
+          true,
+        );
+      }
+      if (options.yes) {
+        this.promptResponse = {
+          spritePath: this.getDefaultSpritePath(),
+          componentPath: await this.getDefaultComponentPath(),
+          componentName: this.getDefaultComponentName(),
+          confirm: true,
+        };
+      } else {
+        this.promptResponse = await this.generatePrompts();
+        if (!this.promptResponse.confirm) {
+          throw new CLIError("Initialization cancelled.", true);
+        }
+      }
+      await this.checkExistence();
+      await this.createSprite();
+      await this.createComponent();
       console.log(
-        "SpriteLab currently only supports React and Next.js projects. New frameworks will be added soon.",
+        "Icon library initialized successfully.\n\nNext Steps:\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.\n",
       );
-      process.exit(0);
-    }
-    if (options.yes) {
-      this.promptResponse = {
-        spritePath: this.getDefaultSpritePath(),
-        componentPath: await this.getDefaultComponentPath(),
-        componentName: this.getDefaultComponentName(),
-        confirm: true,
-      };
-    } else {
-      this.promptResponse = await this.generatePrompts();
-      if (!this.promptResponse.confirm) {
-        console.log("Initialization cancelled.");
+    } catch (err) {
+      if (err instanceof CLIError) {
+        if (!err.silent) {
+          console.error(err.message);
+          process.exit(1);
+        }
+        console.log(err.message);
         process.exit(0);
       }
+      console.error(`An unexpected error occurred: ${(err as Error).message}`);
+      process.exit(1);
     }
-    await this.checkExistence();
-    await this.createSprite();
-    await this.createComponent();
-    console.log(
-      "Icon library initialized successfully.\n\nNext Steps:\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.\n",
-    );
   }
 
   constructor() {
