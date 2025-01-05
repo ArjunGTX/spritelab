@@ -278,6 +278,7 @@ export class InitAction {
   private async createConfigFile(): Promise<void> {
     this.assertPromptResponseExists(this.promptResponse);
     try {
+      console.log("Creating configuration file...");
       const configPath = join(process.cwd(), Constants.configFileName);
       await fs.writeFile(
         configPath,
@@ -289,6 +290,7 @@ export class InitAction {
           "}",
         ].join("\n"),
       );
+      console.log("Configuration file created successfully.");
     } catch (err) {
       throw new CLIError(
         `Failed to create config file at path ${Constants.configFileName}: ${(err as Error).message}`,

@@ -31,7 +31,7 @@ const main = async () => {
     .option("-n, --name <name>", "Name of the icon to be added.")
     .option(
       "-i, --icon <icon>",
-      "URL or the file path of the icon to be added.",
+      "URL or the file path of the SVG icon to be added. Enclose the URL or the file path in single or double quotes.",
     )
     .option(
       "-s, --sprite [sprite]",
