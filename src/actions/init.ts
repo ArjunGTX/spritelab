@@ -4,7 +4,7 @@ import inquirer from "inquirer";
 import { join } from "path";
 import { Constants, defaultSpriteContent } from "../utils/constants.js";
 import shortUUID from "short-uuid";
-import { CLIError } from "../utils/error.js";
+import { CLIError, logErrorAndExit } from "../utils/error.js";
 
 type Framework = "react" | "next" | "other";
 
@@ -275,6 +275,27 @@ export class InitAction {
     ].join("\n");
   }
 
+  private async createConfigFile(): Promise<void> {
+    this.assertPromptResponseExists(this.promptResponse);
+    try {
+      const configPath = join(process.cwd(), Constants.configFileName);
+      await fs.writeFile(
+        configPath,
+        [
+          "{",
+          `  "spritePath": "${this.promptResponse.spritePath}",`,
+          `  "componentPath": "${this.promptResponse.componentPath}",`,
+          `  "componentName": "${this.promptResponse.componentName}"`,
+          "}",
+        ].join("\n"),
+      );
+    } catch (err) {
+      throw new CLIError(
+        `Failed to create config file at path ${Constants.configFileName}: ${(err as Error).message}`,
+      );
+    }
+  }
+
   async execute(options: Record<string, unknown>): Promise<void> {
     try {
       this.hasTs = await this.hasTypeScript();
@@ -299,22 +320,16 @@ export class InitAction {
         }
       }
       await this.checkExistence();
-      await this.createSprite();
-      await this.createComponent();
+      await Promise.all([
+        this.createSprite(),
+        this.createComponent(),
+        this.createConfigFile(),
+      ]);
       console.log(
         "Icon library initialized successfully.\n\nNext Steps:\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.\n",
       );
     } catch (err) {
-      if (err instanceof CLIError) {
-        if (!err.silent) {
-          console.error(err.message);
-          process.exit(1);
-        }
-        console.log(err.message);
-        process.exit(0);
-      }
-      console.error(`An unexpected error occurred: ${(err as Error).message}`);
-      process.exit(1);
+      logErrorAndExit(err);
     }
   }
 

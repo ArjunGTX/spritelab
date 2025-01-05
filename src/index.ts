@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { readFile } from "fs/promises";
-import { addIconAction } from "./actions/add-icon.js";
 import { removeIconAction } from "./actions/remove-icon.js";
 import { createSpriteAction } from "./actions/create-sprite.js";
 import { deleteSpriteAction } from "./actions/delete-sprite.js";
 import { Constants } from "./utils/constants.js";
 import { InitAction } from "./actions/init.js";
+import { AddAction } from "./actions/add.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -43,7 +43,7 @@ const main = async () => {
       "after",
       "\n\nExample:\n\nnpx spritelab add --name bell-fill --icon 'D:\\Downloads\\icons\\bell-fill.svg' --sprite notifications\n\nor\n\nnpx spritelab add --name bell-fill --icon 'https://api.iconify.design/bi/bell-fill.svg' --sprite notifications\n\n",
     )
-    .action(addIconAction);
+    .action(new AddAction().execute);
   program
     .command("remove")
     .alias("r")
