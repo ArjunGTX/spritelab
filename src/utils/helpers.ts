@@ -88,7 +88,7 @@ export const generateIconType = async (spritePath: string) => {
     },
     [],
   );
-  return types.join(" | ");
+  return types.join(" | ") || '""';
 };
 
 export const getComponentContent = async (
@@ -177,4 +177,23 @@ export const getDefaultSpriteContent = () => {
     "</svg>",
     "",
   ].join("\n");
+};
+
+export const updateComponentContent = async (
+  config: Config,
+  force?: boolean,
+) => {
+  if (!force && !(await hasTypeScript())) {
+    return;
+  }
+  const componentPath = join(
+    process.cwd(),
+    config.componentPath,
+    `${config.componentName}.tsx`,
+  );
+  const componentContent = await getComponentContent(
+    config.componentName,
+    config.spritePath,
+  );
+  await fs.writeFile(componentPath, componentContent);
 };

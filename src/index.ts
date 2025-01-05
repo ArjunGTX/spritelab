@@ -2,11 +2,11 @@
 import { Command } from "commander";
 import { readFile } from "fs/promises";
 import { removeIconAction } from "./actions/remove-icon.js";
-import { deleteSpriteAction } from "./actions/delete-sprite.js";
 import { Constants } from "./utils/constants.js";
 import { InitAction } from "./actions/init.js";
 import { AddAction } from "./actions/add.js";
 import { CreateAction } from "./actions/create.js";
+import { DeleteAction } from "./actions/delete.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -82,7 +82,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab delete --name notifications\n\n",
     )
-    .action(deleteSpriteAction);
+    .action(new DeleteAction().execute);
 
   program.parse(process.argv);
 };
