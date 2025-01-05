@@ -1,10 +1,14 @@
 import { promises as fs } from "fs";
-import { readFile } from "fs/promises";
 import inquirer from "inquirer";
 import { join } from "path";
-import { Constants, defaultSpriteContent } from "../utils/constants.js";
-import shortUUID from "short-uuid";
+import { Constants } from "../utils/constants.js";
 import { CLIError, logErrorAndExit } from "../utils/error.js";
+import {
+  getComponentContent,
+  getDefaultSpriteContent,
+  getFramework,
+  hasTypeScript,
+} from "../utils/helpers.js";
 
 type Framework = "react" | "next" | "other";
 
@@ -19,37 +23,6 @@ export class InitAction {
   private hasTs: boolean = false;
   private framework: Framework = "other";
   private promptResponse: PromptResponse | null = null;
-
-  // Check if the project uses TypeScript by looking for a tsconfig.json file at the root.
-  private async hasTypeScript(): Promise<boolean> {
-    try {
-      const tsconfigPath = join(process.cwd(), "tsconfig.json");
-      await fs.access(tsconfigPath);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Check if the project uses React or Next.js by looking for the respective dependencies in package.json.
-  private async getFramework(): Promise<Framework> {
-    try {
-      const pkgPath = join(process.cwd(), "package.json");
-      const pkgFile = await readFile(pkgPath);
-      const pkg = JSON.parse(pkgFile.toString());
-      if (pkg.dependencies.next) {
-        return "next";
-      }
-      if (pkg.dependencies.react) {
-        return "react";
-      }
-      return "other";
-    } catch (err) {
-      throw new CLIError(
-        `Failed to read package.json: ${(err as Error).message}`,
-      );
-    }
-  }
 
   private getDefaultSpritePath(): string {
     return this.framework === "next" || this.framework === "react"
@@ -196,7 +169,7 @@ export class InitAction {
         spriteFolder,
         `${Constants.defaultSpriteName}.svg`,
       );
-      await fs.writeFile(spritePath, defaultSpriteContent);
+      await fs.writeFile(spritePath, getDefaultSpriteContent());
       console.log("Sprite created successfully.");
     } catch (err) {
       throw new CLIError(
@@ -220,59 +193,17 @@ export class InitAction {
         componentFolder,
         `${this.promptResponse.componentName}${this.hasTs ? ".tsx" : ".jsx"}`,
       );
-      await fs.writeFile(componentPath, this.generateComponentContent());
+      const content = await getComponentContent(
+        this.promptResponse.componentName,
+        this.promptResponse.spritePath,
+      );
+      await fs.writeFile(componentPath, content);
       console.log("Component created successfully.");
     } catch (err) {
       throw new CLIError(
         `Failed to create component file at path ${this.promptResponse?.componentPath}: ${(err as Error).message}`,
       );
     }
-  }
-
-  private generateComponentContent(): string {
-    this.assertPromptResponseExists(this.promptResponse);
-    const { componentName, spritePath } = this.promptResponse;
-    const spriteLocation = spritePath.slice("./public".length) || "/";
-    if (this.hasTs) {
-      return [
-        'import React from "react";',
-        "",
-        'export type IconName = "";',
-        "",
-        `export type ${componentName}Props = React.DetailedHTMLProps<`,
-        "  React.SVGAttributes<SVGSVGElement>,",
-        "  SVGSVGElement",
-        "> & {",
-        "  icon: IconName;",
-        "};",
-        "",
-        `export const ${componentName} = React.forwardRef<SVGSVGElement, ${componentName}Props>(function Icon(`,
-        "  { icon, ...props },",
-        "  ref",
-        ") {",
-        '  const [sprite, iconName] = icon.split("/");',
-        "  return (",
-        "    <svg ref={ref} {...props}>",
-        `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
-        "    </svg>",
-        "  );",
-        "});",
-        "",
-      ].join("\n");
-    }
-    return [
-      'import React from "react";',
-      "",
-      `export const ${componentName} = React.forwardRef(function ${componentName}({ icon, ...props }, ref) {`,
-      '  const [sprite, iconName] = icon.split("/");',
-      "  return (",
-      "    <svg ref={ref} {...props}>",
-      `      <use href={\`${spriteLocation}/\${sprite}.svg?v=${shortUUID.generate()}#\${iconName}\`} />`,
-      "    </svg>",
-      "  );",
-      "});",
-      "",
-    ].join("\n");
   }
 
   private async createConfigFile(): Promise<void> {
@@ -300,8 +231,8 @@ export class InitAction {
 
   async execute(options: Record<string, unknown>): Promise<void> {
     try {
-      this.hasTs = await this.hasTypeScript();
-      this.framework = await this.getFramework();
+      this.hasTs = await hasTypeScript();
+      this.framework = await getFramework();
       if (this.framework === "other") {
         throw new CLIError(
           "SpriteLab currently only supports React and Next.js projects. New frameworks will be added soon.",

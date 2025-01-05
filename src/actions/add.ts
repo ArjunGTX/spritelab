@@ -1,6 +1,11 @@
 import { join } from "path";
 import { CLIError, logErrorAndExit } from "../utils/error.js";
-import { Config, getConfig } from "../utils/helpers.js";
+import {
+  Config,
+  getComponentContent,
+  getConfig,
+  hasTypeScript,
+} from "../utils/helpers.js";
 import { readFile } from "fs/promises";
 import { promises as fs } from "fs";
 import { parse } from "node-html-parser";
@@ -50,7 +55,7 @@ export class AddAction {
     }
     return join(
       process.cwd(),
-      this.config.spritePath.slice(2), // remove the './' from the beginning of the path
+      this.config.spritePath,
       `${this.options.sprite}.svg`,
     );
   }
@@ -113,6 +118,32 @@ export class AddAction {
     return svg;
   }
 
+  private async updateComponent() {
+    if (!(await hasTypeScript())) {
+      return;
+    }
+    if (!this.options) {
+      throw new CLIError("Options not found.");
+    }
+    if (!this.config) {
+      throw new CLIError("Config not found.");
+    }
+    console.log(`Updating '${this.config.componentName}' component...`);
+    const componentPath = join(
+      process.cwd(),
+      this.config.componentPath,
+      `${this.config.componentName}.tsx`,
+    );
+    const componentContent = await getComponentContent(
+      this.config.componentName,
+      this.config.spritePath,
+    );
+    await fs.writeFile(componentPath, componentContent);
+    console.log(
+      `Component '${this.config.componentName}' updated successfully.`,
+    );
+  }
+
   private async addIconToSprite() {
     if (!this.options) {
       throw new CLIError("Options not found.");
@@ -157,6 +188,7 @@ export class AddAction {
       };
       this.config = await getConfig();
       await this.addIconToSprite();
+      await this.updateComponent();
     } catch (err) {
       logErrorAndExit(err);
     }
