@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { readFile } from "fs/promises";
-import { removeIconAction } from "./actions/remove-icon.js";
 import { Constants } from "./utils/constants.js";
 import { InitAction } from "./actions/init.js";
 import { AddAction } from "./actions/add.js";
 import { CreateAction } from "./actions/create.js";
 import { DeleteAction } from "./actions/delete.js";
+import { RemoveAction } from "./actions/remove.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -58,7 +58,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab remove --name bell-fill --sprite notifications\n\n",
     )
-    .action(removeIconAction);
+    .action(new RemoveAction().execute);
   program
     .command("create")
     .alias("c")

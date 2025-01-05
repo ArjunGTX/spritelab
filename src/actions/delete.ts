@@ -37,15 +37,14 @@ export class DeleteAction {
       .access(spritePath)
       .then(() => true)
       .catch(() => false);
-    if (spriteExists) {
-      await fs.unlink(spritePath);
-      console.log(`Sprite '${this.options.name}' deleted successfully.`);
-      await this.updateComponent();
-    } else {
-      console.log(
+    if (!spriteExists) {
+      throw new CLIError(
         `Sprite '${this.options.name}' does not exist, nothing to delete.`,
+        true,
       );
     }
+    await fs.unlink(spritePath);
+    console.log(`Sprite '${this.options.name}' deleted successfully.`);
   }
 
   private async updateComponent() {
@@ -70,6 +69,7 @@ export class DeleteAction {
       };
       this.config = await getConfig();
       await this.deleteSprite();
+      await this.updateComponent();
     } catch (err) {
       logErrorAndExit(err);
     }
