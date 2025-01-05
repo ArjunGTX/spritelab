@@ -259,7 +259,7 @@ export class InitAction {
         this.createConfigFile(),
       ]);
       console.log(
-        "Icon library initialized successfully.\n\nNext Steps:\n1. Add icons to your sprite using the 'add' command.\n2. Use the generated component to display icons in your project.\n",
+        "Icon library initialized successfully.\n\nUse the following command to add an icon to the sprite:\n\nnpx spritelab add --name <icon-name> --icon <url-or-path-to-svg-file>\n",
       );
     } catch (err) {
       logErrorAndExit(err);

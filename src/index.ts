@@ -2,11 +2,11 @@
 import { Command } from "commander";
 import { readFile } from "fs/promises";
 import { removeIconAction } from "./actions/remove-icon.js";
-import { createSpriteAction } from "./actions/create-sprite.js";
 import { deleteSpriteAction } from "./actions/delete-sprite.js";
 import { Constants } from "./utils/constants.js";
 import { InitAction } from "./actions/init.js";
 import { AddAction } from "./actions/add.js";
+import { CreateAction } from "./actions/create.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -68,7 +68,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab create --name notifications\n\n",
     )
-    .action(createSpriteAction);
+    .action(new CreateAction().execute);
   program
     .command("delete")
     .alias("d")
