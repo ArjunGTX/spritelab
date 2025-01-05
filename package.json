@@ -1,6 +1,6 @@
 {
   "name": "spritelab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build a custom icon library from the terminal",
   "main": "build/index.js",
   "source": "src/index.ts",
@@ -32,6 +32,7 @@
     "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.5",
     "eslint": "^9.17.0",
+    "globals": "^15.14.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.0"
@@ -39,6 +40,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "commander": "^13.0.0",
+    "glob": "^11.0.0",
     "inquirer": "^12.3.0",
     "node-html-parser": "^7.0.1",
     "short-uuid": "^5.2.0"

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { readFile } from "fs/promises";
-import { addIconAction } from "./actions/add-icon.js";
-import { removeIconAction } from "./actions/remove-icon.js";
-import { createSpriteAction } from "./actions/create-sprite.js";
-import { deleteSpriteAction } from "./actions/delete-sprite.js";
 import { Constants } from "./utils/constants.js";
 import { InitAction } from "./actions/init.js";
+import { AddAction } from "./actions/add.js";
+import { CreateAction } from "./actions/create.js";
+import { DeleteAction } from "./actions/delete.js";
+import { RemoveAction } from "./actions/remove.js";
 
 const main = async () => {
   const pkgFile = await readFile(new URL("../package.json", import.meta.url));
@@ -31,7 +31,7 @@ const main = async () => {
     .option("-n, --name <name>", "Name of the icon to be added.")
     .option(
       "-i, --icon <icon>",
-      "URL or the file path of the icon to be added.",
+      "URL or the file path of the SVG icon to be added. Enclose the URL or the file path in single or double quotes.",
     )
     .option(
       "-s, --sprite [sprite]",
@@ -43,7 +43,7 @@ const main = async () => {
       "after",
       "\n\nExample:\n\nnpx spritelab add --name bell-fill --icon 'D:\\Downloads\\icons\\bell-fill.svg' --sprite notifications\n\nor\n\nnpx spritelab add --name bell-fill --icon 'https://api.iconify.design/bi/bell-fill.svg' --sprite notifications\n\n",
     )
-    .action(addIconAction);
+    .action(new AddAction().execute);
   program
     .command("remove")
     .alias("r")
@@ -58,7 +58,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab remove --name bell-fill --sprite notifications\n\n",
     )
-    .action(removeIconAction);
+    .action(new RemoveAction().execute);
   program
     .command("create")
     .alias("c")
@@ -68,7 +68,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab create --name notifications\n\n",
     )
-    .action(createSpriteAction);
+    .action(new CreateAction().execute);
   program
     .command("delete")
     .alias("d")
@@ -82,7 +82,7 @@ const main = async () => {
       "after",
       "\n\nExample: npx spritelab delete --name notifications\n\n",
     )
-    .action(deleteSpriteAction);
+    .action(new DeleteAction().execute);
 
   program.parse(process.argv);
 };
