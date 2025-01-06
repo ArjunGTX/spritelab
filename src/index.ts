@@ -22,7 +22,7 @@ const main = async () => {
     .description("Initialize the icon library.")
     .addHelpText(
       "after",
-      "\n\nInitialize the icon library by answering a few questions. This will create a sprite file, a react component, and a type definition file based on whether your project uses typescript or not.\n\nExample: npx spritelab init\n\n",
+      "\n\nInitialize the icon library by answering a few questions. This will create a sprite file, a react component.\n\nExample: npx spritelab init\n\n",
     )
     .action(new InitAction().execute);
   program
