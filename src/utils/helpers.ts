@@ -179,13 +179,7 @@ export const getDefaultSpriteContent = () => {
   ].join("\n");
 };
 
-export const updateComponentContent = async (
-  config: Config,
-  force?: boolean,
-) => {
-  if (!force && !(await hasTypeScript())) {
-    return;
-  }
+export const updateComponentContent = async (config: Config) => {
   const componentPath = join(
     process.cwd(),
     config.componentPath,
