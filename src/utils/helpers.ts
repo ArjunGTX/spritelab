@@ -201,10 +201,11 @@ export const getDefaultSpriteContent = () => {
 };
 
 export const updateComponentContent = async (config: Config) => {
+  const hasTs = await hasTypeScript();
   const componentPath = join(
     process.cwd(),
     config.componentPath,
-    `${config.componentName}.tsx`,
+    `${config.componentName}.${hasTs ? "tsx" : "jsx"}`,
   );
   const componentContent = await getComponentContent(
     config.componentName,
