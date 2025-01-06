@@ -1,6 +1,6 @@
 {
   "name": "spritelab",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "A library for creating and managing custom SVG icon sprites for your React/Next project.",
   "main": "build/index.js",
   "source": "src/index.ts",
