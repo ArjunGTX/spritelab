@@ -1,7 +1,7 @@
 {
   "name": "spritelab",
   "version": "0.2.3",
-  "description": "Build a custom icon library from the terminal",
+  "description": "A library for creating and managing custom SVG icon sprites for your React/Next project.",
   "main": "build/index.js",
   "source": "src/index.ts",
   "type": "module",
