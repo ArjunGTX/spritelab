@@ -8,6 +8,27 @@
   "bin": {
     "spritelab": "build/index.js"
   },
+  "keywords": [
+    "icon",
+    "sprite",
+    "library",
+    "cli",
+    "react",
+    "next",
+    "icons",
+    "svg",
+    "sprite",
+    "icon library",
+    "custom icons",
+    "typescript",
+    "lazy loading",
+    "frontend",
+    "icon management",
+    "iconify",
+    "svg sprite",
+    "react component",
+    "design system"
+  ],
   "scripts": {
     "start": "node ./build/index.js",
     "dev": "tsc -w",
