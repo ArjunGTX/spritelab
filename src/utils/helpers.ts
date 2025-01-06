@@ -124,7 +124,7 @@ export const getComponentContent = async (
       "",
     ].join("\n");
   }
-  return [
+  const output = [
     'import React from "react";',
     "",
     `export const ${componentName} = React.forwardRef(function ${componentName}({ icon, ...props }, ref) {`,
@@ -136,7 +136,23 @@ export const getComponentContent = async (
     "  );",
     "});",
     "",
-  ].join("\n");
+  ];
+  const pkg = await getPackage();
+  const propTypes =
+    pkg.dependencies["prop-types"] || pkg.devDependencies["prop-types"];
+  if (propTypes) {
+    output.splice(
+      1,
+      0,
+      'import PropTypes from "prop-types";',
+      "",
+      `${componentName}.propTypes = {`,
+      "  icon: PropTypes.string.isRequired,",
+      "};",
+    );
+  }
+
+  return output.join("\n");
 };
 
 export const hasTypeScript = async () => {
@@ -149,11 +165,16 @@ export const hasTypeScript = async () => {
   }
 };
 
+export const getPackage = async () => {
+  const pkgPath = join(process.cwd(), "package.json");
+  const pkgFile = await readFile(pkgPath);
+  const pkg = JSON.parse(pkgFile.toString());
+  return pkg;
+};
+
 export const getFramework = async () => {
   try {
-    const pkgPath = join(process.cwd(), "package.json");
-    const pkgFile = await readFile(pkgPath);
-    const pkg = JSON.parse(pkgFile.toString());
+    const pkg = await getPackage();
     if (pkg.dependencies.next) {
       return "next";
     }
