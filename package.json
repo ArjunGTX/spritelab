@@ -12,7 +12,7 @@
     "start": "node ./build/index.js",
     "dev": "tsc -w",
     "build": "pnpm run pretty && pnpm run lint && tsc",
-    "publish": "pnpm run build && pnpm publish",
+    "release": "pnpm run build && pnpm publish",
     "pretty": "prettier --write \"./**/*.{json,ts,js,yml}\"",
     "pretty:check": "prettier \"./**/*.{json,ts,js,yml}\" --check",
     "lint": "eslint \"./**/*.{json,ts,js}\" --max-warnings 0"
